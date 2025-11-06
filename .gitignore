@@ -66,7 +66,7 @@ web_modules/
 .yarn-integrity
 
 # dotenv environment variable files
-.env
+.env                 # CRUCIAL: Contains MONGO_URI and GEMINI_API_KEY
 .env.*
 !.env.example
 
@@ -87,6 +87,11 @@ dist
 # Comment in the public line in if your project uses Gatsby and not Next.js
 # https://nextjs.org/blog/next-9-1#public-directory-support
 # public
+
+# *** START: REACT FRONTEND SPECIFIC FILES ***
+# React/Webpack Build Output
+/build          # Standard Create React App build directory
+# *** END: REACT FRONTEND SPECIFIC FILES ***
 
 # vuepress build output
 .vuepress/dist
