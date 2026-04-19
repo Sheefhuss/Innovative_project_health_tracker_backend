@@ -7,7 +7,7 @@ const bcrypt = require('bcrypt');
 const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }); // ✅ FIXED
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }); 
 const chatModel = 'gemini-1.5-flash';
 
 // --- Utility Functions ---
@@ -30,7 +30,6 @@ const deriveUserId = (userEmail) => {
     return userEmail.split('@')[0].toLowerCase().replace(/\s/g, '-') + '-unique-id';
 };
 
-// --- Database Connection ---
 const MONGO_URI = process.env.MONGO_URI;
 
 mongoose.connect(MONGO_URI)
