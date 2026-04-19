@@ -7,7 +7,7 @@ const bcrypt = require('bcrypt');
 const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
-const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }); // ✅ FIXED
 const chatModel = 'gemini-1.5-flash';
 
 // --- Utility Functions ---
@@ -68,13 +68,10 @@ const ProfileSchema = new mongoose.Schema({
 
 const Profile = mongoose.model('Profile', ProfileSchema);
 
-// --- Middleware ---
 app.use(cors({
     origin: 'https://fitnesstracker44.netlify.app' 
 }));
 app.use(express.json()); 
-
-// --- ROUTES ---
 
 app.post('/api/auth/register', async (req, res) => {
     const { name, email, password } = req.body;
@@ -113,13 +110,16 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/ai/chat', async (req, res) => {
     try {
         const { message, userProfile, recentFoodLogs } = req.body;
-        const systemInstruction = `You are Fit AI. Profile: ${JSON.stringify(userProfile)}. Logs: ${JSON.stringify(recentFoodLogs)}.`;
-        
-        const model = ai.getGenerativeModel({ model: chatModel, systemInstruction });
-        const result = await model.generateContent(message);
-        
-        res.status(200).json({ response: result.response.text() });
+        const systemInstruction = `You are Fit AI, a helpful fitness and nutrition assistant. User Profile: ${JSON.stringify(userProfile)}. Recent Food Logs: ${JSON.stringify(recentFoodLogs)}.`;
+        const result = await ai.models.generateContent({
+            model: chatModel,
+            contents: message,
+            config: { systemInstruction }
+        });
+
+        res.status(200).json({ response: result.text });
     } catch (error) {
+        console.error('Gemini AI Error:', error.message);
         res.status(500).json({ message: 'AI Error', error: error.message });
     }
 });
