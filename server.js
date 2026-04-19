@@ -8,10 +8,7 @@ const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }); 
-const chatModel = 'gemini-1.5-flash';
-// Add this right after: const ai = new GoogleGenAI(...)
-console.log('Gemini Key loaded:', process.env.GEMINI_API_KEY ? 'YES' : 'NO - MISSING!');
-// --- Utility Functions ---
+const chatModel = 'gemini-2.0-flash';
 const getCaloriesPerGram = (foodItem) => {
     const standardizedItem = foodItem.toLowerCase();
     switch (standardizedItem) {
