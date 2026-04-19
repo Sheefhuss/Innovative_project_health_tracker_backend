@@ -4,11 +4,11 @@ const express = require('express');
 const cors = require('cors'); 
 const mongoose = require('mongoose'); 
 const bcrypt = require('bcrypt'); 
-const { GoogleGenAI } = require('@google/genai');
+const Groq = require('groq-sdk');
 
 const app = express();
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }); 
-const chatModel = 'gemini-2.0-flash';
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
 const getCaloriesPerGram = (foodItem) => {
     const standardizedItem = foodItem.toLowerCase();
     switch (standardizedItem) {
@@ -34,7 +34,6 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB connected successfully!'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// --- SCHEMAS ---
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
@@ -75,7 +74,6 @@ app.post('/api/auth/register', async (req, res) => {
     try {
         let user = await User.findOne({ email });
         if (user) return res.status(400).json({ message: 'User already registered.' });
-
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
         user = new User({ name, email, password: hashedPassword });
@@ -91,10 +89,8 @@ app.post('/api/auth/login', async (req, res) => {
     try {
         const user = await User.findOne({ email });
         if (!user) return res.status(401).json({ message: 'Invalid credentials.' });
-
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: 'Invalid credentials.' });
-
         const userId = deriveUserId(user.email);
         res.status(200).json({ 
             user: { userId, name: user.name, email: user.email }
@@ -107,16 +103,22 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/ai/chat', async (req, res) => {
     try {
         const { message, userProfile, recentFoodLogs } = req.body;
-        const systemInstruction = `You are Fit AI, a helpful fitness and nutrition assistant. User Profile: ${JSON.stringify(userProfile)}. Recent Food Logs: ${JSON.stringify(recentFoodLogs)}.`;
-        const result = await ai.models.generateContent({
-            model: chatModel,
-            contents: message,
-            config: { systemInstruction }
+        const completion = await groq.chat.completions.create({
+            model: 'llama3-8b-8192',
+            messages: [
+                {
+                    role: 'system',
+                    content: `You are Fit AI, a helpful fitness and nutrition assistant. User Profile: ${JSON.stringify(userProfile)}. Recent Food Logs: ${JSON.stringify(recentFoodLogs)}.`
+                },
+                {
+                    role: 'user',
+                    content: message
+                }
+            ]
         });
-
-        res.status(200).json({ response: result.text });
+        res.status(200).json({ response: completion.choices[0].message.content });
     } catch (error) {
-        console.error('Gemini AI Error:', error.message);
+        console.error('Groq AI Error:', error.message);
         res.status(500).json({ message: 'AI Error', error: error.message });
     }
 });
@@ -174,7 +176,6 @@ app.delete('/api/foodlog/:logId', async (req, res) => {
     }
 });
 
-// --- Server Startup ---
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
